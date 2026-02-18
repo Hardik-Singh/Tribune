@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { chambers } from "@/lib/mock-data";
 
-// GET /api/chambers — List all chambers
-// TODO: Fetch chambers from SDK
-// TODO: Support pagination and search query params
-// TODO: Return array of chamber summaries
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const q = searchParams.get("q")?.toLowerCase();
 
-export async function GET(_request: NextRequest) {
-  // TODO: Fetch and return chambers list
-  return NextResponse.json({ error: "Not implemented" }, { status: 501 });
+  let result = chambers;
+  if (q) {
+    result = chambers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q)
+    );
+  }
+
+  return NextResponse.json({ chambers: result });
 }

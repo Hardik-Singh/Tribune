@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// GET /api/chambers/[id] — Get chamber details
-// TODO: Fetch chamber from SDK by ID
-// TODO: Include members, governance rules, active proposals
-// TODO: Return full chamber object
+import { getChamberById, getProposalsForChamber } from "@/lib/mock-data";
 
 export async function GET(
   _request: NextRequest,
-  { params: _params }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  // TODO: Fetch and return chamber details
-  return NextResponse.json({ error: "Not implemented" }, { status: 501 });
+  const chamber = getChamberById(params.id);
+  if (!chamber) {
+    return NextResponse.json({ error: "Chamber not found" }, { status: 404 });
+  }
+
+  const proposals = getProposalsForChamber(params.id);
+  return NextResponse.json({ chamber, proposals });
 }

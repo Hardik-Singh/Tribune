@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { activities } from "@/lib/mock-data";
 
-// GET /api/feed — Get activity feed
-// TODO: Fetch recent activities from SDK (votes, proposals, merges)
-// TODO: Support cursor-based pagination via query params
-// TODO: Return array of activity items
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get("type");
 
-export async function GET(_request: NextRequest) {
-  // TODO: Fetch and return activity feed
-  return NextResponse.json({ error: "Not implemented" }, { status: 501 });
+  let result = activities;
+  if (type && type !== "all") {
+    result = activities.filter((a) => a.type === type);
+  }
+
+  return NextResponse.json({ activities: result });
 }
