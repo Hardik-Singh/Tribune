@@ -1,22 +1,106 @@
 import Link from "next/link";
-import { getUserProfile } from "@/lib/mock-data";
-import { store } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 import ReputationBadge from "@/components/ReputationBadge";
 import ProposalCard from "@/components/ProposalCard";
+import {
+  ReputationTier,
+  UserReputation,
+  Proposal,
+  VoteChoice,
+} from "@/lib/types";
 
 interface ProfilePageProps {
-  params: { address: string };
+  params: Promise<{ address: string }>;
 }
 
-export default function ProfilePage({ params }: ProfilePageProps) {
-  const profile = getUserProfile(params.address);
-  if (!profile) {
+export default async function ProfilePage({ params }: ProfilePageProps) {
+  const { address } = await params;
+
+  const { data: repRow } = await supabase
+    .from("reputations")
+    .select("*")
+    .eq("address", address)
+    .single();
+
+  const rep: UserReputation = repRow
+    ? {
+        address: repRow.address,
+        score: repRow.score,
+        tier: repRow.tier as ReputationTier,
+        votingPower: repRow.voting_power,
+        proposalsCreated: repRow.proposals_created,
+        votesCast: repRow.votes_cast,
+      }
+    : {
+        address,
+        score: 0,
+        tier: ReputationTier.Newcomer,
+        votingPower: 1,
+        proposalsCreated: 0,
+        votesCast: 0,
+      };
+
+  const { data: proposalRows } = await supabase
+    .from("proposals")
+    .select("*")
+    .eq("author", address)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const recentProposals: Proposal[] = (proposalRows ?? []).map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    status: r.status,
+    chamberId: r.chamber_id,
+    chamberName: r.chamber_name,
+    author: r.author,
+    createdAt: r.created_at,
+    endsAt: r.ends_at,
+    votesYes: r.votes_yes,
+    votesNo: r.votes_no,
+    votesAbstain: r.votes_abstain,
+    totalVotes: r.total_votes,
+    quorum: r.quorum,
+    diff: r.diff,
+    prUrl: r.pr_url,
+    commentCount: r.comment_count,
+    upvotes: r.upvotes,
+    downvotes: r.downvotes,
+  }));
+
+  const { data: voteRows } = await supabase
+    .from("votes")
+    .select("proposal_id, choice, cast_at")
+    .eq("voter", address)
+    .order("cast_at", { ascending: false })
+    .limit(10);
+
+  // Get proposal titles for votes
+  const voteProposalIds = (voteRows ?? []).map((v) => v.proposal_id);
+  const { data: votedProposals } = voteProposalIds.length
+    ? await supabase
+        .from("proposals")
+        .select("id, title")
+        .in("id", voteProposalIds)
+    : { data: [] };
+
+  const titleMap = new Map(
+    (votedProposals ?? []).map((p) => [p.id, p.title])
+  );
+
+  const recentVotes = (voteRows ?? []).map((v) => ({
+    proposalId: v.proposal_id as string,
+    proposalTitle: titleMap.get(v.proposal_id) ?? "Unknown",
+    choice: v.choice as VoteChoice,
+    castAt: v.cast_at as string,
+  }));
+
+  if (!repRow && recentProposals.length === 0 && recentVotes.length === 0) {
     return (
       <div>
         <h1 className="text-2xl font-bold text-white">Profile</h1>
-        <p className="mt-4 font-mono text-sm text-zinc-400">
-          {params.address}
-        </p>
+        <p className="mt-4 font-mono text-sm text-zinc-400">{address}</p>
         <p className="mt-2 text-sm text-zinc-500">
           No profile data found for this address.
         </p>
@@ -24,14 +108,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     );
   }
 
-  const rep = profile.reputation;
-
   return (
     <div>
       <div className="flex items-center gap-4">
         <div>
           <h1 className="font-mono text-lg font-bold text-white">
-            {params.address.slice(0, 10)}...{params.address.slice(-6)}
+            {address.slice(0, 10)}...{address.slice(-6)}
           </h1>
           <div className="mt-1">
             <ReputationBadge tier={rep.tier} score={rep.score} />
@@ -57,30 +139,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-lg font-semibold text-white">Chambers</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {profile.chambers.map((cId) => {
-            const chamber = store.getChamberById(cId);
-            return chamber ? (
-              <Link
-                key={cId}
-                href={`/chambers/${cId}`}
-                className="rounded-lg border border-zinc-800 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-600 hover:text-white"
-              >
-                {chamber.name}
-              </Link>
-            ) : null;
-          })}
-        </div>
-      </div>
-
-      <div className="mt-8">
         <h2 className="text-lg font-semibold text-white">Recent Proposals</h2>
         <div className="mt-4 space-y-4">
-          {profile.recentProposals.map((p) => (
+          {recentProposals.map((p) => (
             <ProposalCard key={p.id} proposal={p} />
           ))}
-          {profile.recentProposals.length === 0 && (
+          {recentProposals.length === 0 && (
             <p className="text-sm text-zinc-500">No proposals yet.</p>
           )}
         </div>
@@ -89,7 +153,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-white">Recent Votes</h2>
         <div className="mt-3 space-y-2">
-          {profile.recentVotes.map((v) => (
+          {recentVotes.map((v) => (
             <div
               key={v.proposalId}
               className="flex items-center justify-between rounded-lg border border-zinc-800 bg-surface px-4 py-3"
@@ -105,8 +169,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   v.choice === "yes"
                     ? "text-vote-yes"
                     : v.choice === "no"
-                    ? "text-vote-no"
-                    : "text-zinc-500"
+                      ? "text-vote-no"
+                      : "text-zinc-500"
                 }`}
               >
                 {v.choice.toUpperCase()}

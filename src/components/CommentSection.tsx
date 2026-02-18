@@ -17,23 +17,28 @@ export default function CommentSection({
   const { connected, address } = useWallet();
   const [comments, setComments] = useState(initialComments);
   const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!connected || !body.trim()) return;
+    if (!connected || !body.trim() || submitting) return;
 
-    const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      proposalId,
-      author: address!,
-      body: body.trim(),
-      createdAt: new Date().toISOString(),
-      upvotes: 0,
-      downvotes: 0,
-    };
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/proposals/${proposalId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: body.trim(), author: address }),
+      });
 
-    setComments((prev) => [...prev, newComment]);
-    setBody("");
+      if (res.ok) {
+        const { comment } = await res.json();
+        setComments((prev) => [...prev, comment]);
+        setBody("");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -60,10 +65,10 @@ export default function CommentSection({
           />
           <button
             type="submit"
-            disabled={!body.trim()}
+            disabled={!body.trim() || submitting}
             className="btn-primary disabled:opacity-50"
           >
-            Post
+            {submitting ? "..." : "Post"}
           </button>
         </form>
       ) : (

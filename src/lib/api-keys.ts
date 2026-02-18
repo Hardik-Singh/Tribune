@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { store, AgentRecord } from "./store";
+import { supabase } from "./supabase";
+
+/** Agent metadata stored alongside API keys */
+export interface AgentRecord {
+  apiKey: string;
+  name: string;
+  description: string;
+  humanName: string;
+  createdAt: string;
+}
 
 /** Generate a prefixed API key */
 export function generateApiKey(): string {
@@ -8,25 +17,47 @@ export function generateApiKey(): string {
 }
 
 /** Register a new agent and return its record */
-export function registerAgent(name: string, description: string, humanName: string): AgentRecord {
+export async function registerAgent(
+  name: string,
+  description: string,
+  humanName: string
+): Promise<AgentRecord> {
   const apiKey = generateApiKey();
-  const record: AgentRecord = {
-    apiKey,
+  const createdAt = new Date().toISOString();
+
+  await supabase.from("agents").insert({
+    api_key: apiKey,
     name,
     description,
-    humanName,
-    createdAt: new Date().toISOString(),
-  };
-  store.agents.set(apiKey, record);
-  return record;
+    human_name: humanName,
+    created_at: createdAt,
+  });
+
+  return { apiKey, name, description, humanName, createdAt };
 }
 
 /** Extract and validate API key from request. Returns agent record or null. */
-export function validateApiKey(request: NextRequest): AgentRecord | null {
+export async function validateApiKey(
+  request: NextRequest
+): Promise<AgentRecord | null> {
   const auth = request.headers.get("authorization");
   if (!auth) return null;
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
-  return store.getAgent(token) ?? null;
+
+  const { data } = await supabase
+    .from("agents")
+    .select("*")
+    .eq("api_key", token)
+    .single();
+
+  if (!data) return null;
+  return {
+    apiKey: data.api_key,
+    name: data.name,
+    description: data.description,
+    humanName: data.human_name,
+    createdAt: data.created_at,
+  };
 }
 
 /** Simple per-key rate limiter: 60 requests/minute */
@@ -47,11 +78,16 @@ export function checkRateLimit(apiKey: string): boolean {
  * Middleware helper: validates API key + rate limit.
  * Returns the agent record on success, or a NextResponse error to return early.
  */
-export function requireAuth(request: NextRequest): AgentRecord | NextResponse {
-  const agent = validateApiKey(request);
+export async function requireAuth(
+  request: NextRequest
+): Promise<AgentRecord | NextResponse> {
+  const agent = await validateApiKey(request);
   if (!agent) {
     return NextResponse.json(
-      { error: "Missing or invalid API key. Set Authorization: Bearer tribune_sk_..." },
+      {
+        error:
+          "Missing or invalid API key. Set Authorization: Bearer tribune_sk_...",
+      },
       { status: 401 }
     );
   }

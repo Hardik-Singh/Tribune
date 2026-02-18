@@ -1,67 +1,102 @@
 import { NextRequest, NextResponse } from "next/server";
-import { store } from "@/lib/store";
-import { requireAuth } from "@/lib/api-keys";
+import { supabase } from "@/lib/supabase";
 import { ActivityType } from "@/lib/types";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const { searchParams } = new URL(request.url);
-  const comments = store.getCommentsForProposal(params.id);
   const cursor = parseInt(searchParams.get("cursor") ?? "0", 10);
-  const limit = parseInt(searchParams.get("limit") ?? "20", 10);
-  const total = comments.length;
-  const paged = comments.slice(cursor, cursor + limit);
+  const limit = parseInt(searchParams.get("limit") ?? "50", 10);
+
+  const { data: rows, count } = await supabase
+    .from("comments")
+    .select("*", { count: "exact" })
+    .eq("proposal_id", id)
+    .order("created_at", { ascending: true })
+    .range(cursor, cursor + limit - 1);
+
+  const total = count ?? 0;
   const nextCursor = cursor + limit < total ? String(cursor + limit) : null;
 
-  return NextResponse.json({ data: paged, meta: { total, cursor: nextCursor } });
+  const data = (rows ?? []).map((r) => ({
+    id: r.id,
+    proposalId: r.proposal_id,
+    author: r.author,
+    body: r.body,
+    createdAt: r.created_at,
+    upvotes: r.upvotes,
+    downvotes: r.downvotes,
+  }));
+
+  return NextResponse.json({ data, meta: { total, cursor: nextCursor } });
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const authResult = requireAuth(request);
-  if (authResult instanceof NextResponse) return authResult;
-  const agent = authResult;
+  const { id: proposalId } = await params;
 
   const body = await request.json().catch(() => null);
-  if (!body || !body.content) {
+  if (!body || !body.body || !body.author) {
     return NextResponse.json(
-      { error: "Missing required field: content" },
+      { error: "Missing required fields: body, author" },
       { status: 400 }
     );
   }
 
-  const proposal = store.getProposalById(params.id);
+  const { data: proposal } = await supabase
+    .from("proposals")
+    .select("id, title, comment_count")
+    .eq("id", proposalId)
+    .single();
+
   if (!proposal) {
     return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
   }
 
-  const newComment = {
-    id: `c-${Date.now()}`,
-    proposalId: params.id,
-    author: agent.name,
-    body: body.content,
-    createdAt: new Date().toISOString(),
-    upvotes: 0,
-    downvotes: 0,
-  };
+  const commentId = `c-${Date.now()}`;
+  const now = new Date().toISOString();
 
-  store.comments.push(newComment);
-  proposal.commentCount++;
-
-  store.addActivity({
-    id: `a-${Date.now()}`,
-    type: ActivityType.CommentAdded,
-    actor: agent.name,
-    description: "commented on",
-    entityId: params.id,
-    entityType: "proposal",
-    entityTitle: proposal.title,
-    createdAt: newComment.createdAt,
+  await supabase.from("comments").insert({
+    id: commentId,
+    proposal_id: proposalId,
+    author: body.author,
+    body: body.body,
+    created_at: now,
   });
 
-  return NextResponse.json({ comment: newComment }, { status: 201 });
+  await supabase
+    .from("proposals")
+    .update({ comment_count: proposal.comment_count + 1 })
+    .eq("id", proposalId);
+
+  await supabase.from("activities").insert({
+    id: `a-${Date.now()}`,
+    type: ActivityType.CommentAdded,
+    actor: body.author,
+    description: "commented on",
+    entity_id: proposalId,
+    entity_type: "proposal",
+    entity_title: proposal.title,
+    created_at: now,
+  });
+
+  return NextResponse.json(
+    {
+      comment: {
+        id: commentId,
+        proposalId,
+        author: body.author,
+        body: body.body,
+        createdAt: now,
+        upvotes: 0,
+        downvotes: 0,
+      },
+    },
+    { status: 201 }
+  );
 }

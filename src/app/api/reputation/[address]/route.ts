@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { store } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 import { ReputationTier } from "@/lib/types";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
-  const reputation = store.getReputation(params.address);
-  if (!reputation) {
+  const { address } = await params;
+
+  const { data: row } = await supabase
+    .from("reputations")
+    .select("*")
+    .eq("address", address)
+    .single();
+
+  if (!row) {
     return NextResponse.json({
       reputation: {
-        address: params.address,
+        address,
         score: 0,
         tier: ReputationTier.Newcomer,
         votingPower: 1,
@@ -20,5 +27,14 @@ export async function GET(
     });
   }
 
-  return NextResponse.json({ reputation });
+  return NextResponse.json({
+    reputation: {
+      address: row.address,
+      score: row.score,
+      tier: row.tier as ReputationTier,
+      votingPower: row.voting_power,
+      proposalsCreated: row.proposals_created,
+      votesCast: row.votes_cast,
+    },
+  });
 }

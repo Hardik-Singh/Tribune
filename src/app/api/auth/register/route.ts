@@ -16,12 +16,15 @@ export async function POST(request: NextRequest) {
 
   if (name.length > 100 || description.length > 500 || humanName.length > 100) {
     return NextResponse.json(
-      { error: "Field too long. name/humanName max 100 chars, description max 500." },
+      {
+        error:
+          "Field too long. name/humanName max 100 chars, description max 500.",
+      },
       { status: 400 }
     );
   }
 
-  const agent = registerAgent(name, description, humanName);
+  const agent = await registerAgent(name, description, humanName);
 
   return NextResponse.json(
     {

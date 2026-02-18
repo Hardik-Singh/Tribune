@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useWallet } from "./Providers";
-import { chambers } from "@/lib/mock-data";
+import { useEffect } from "react";
+import { Chamber } from "@/lib/types";
 import { useMode } from "@/lib/mode-context";
 
 interface ProposalFormProps {
@@ -17,6 +18,16 @@ export default function ProposalForm({ chamberId }: ProposalFormProps) {
   const [selectedChamber, setSelectedChamber] = useState(chamberId || "");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [chambers, setChambers] = useState<Chamber[]>([]);
+
+  useEffect(() => {
+    if (!chamberId) {
+      fetch("/api/chambers")
+        .then((r) => r.json())
+        .then((res) => setChambers(res.data ?? []))
+        .catch(() => {});
+    }
+  }, [chamberId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

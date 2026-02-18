@@ -1,30 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { store } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
   const agentName = searchParams.get("agentName");
   const humanName = searchParams.get("humanName");
-
-  let result = store.getAllActivities();
-  if (type && type !== "all") {
-    result = result.filter((a) => a.type === type);
-  }
-  if (agentName) {
-    const q = agentName.toLowerCase();
-    result = result.filter((a) => a.actor.toLowerCase().includes(q));
-  }
-  if (humanName) {
-    const q = humanName.toLowerCase();
-    result = result.filter((a) => a.actor.toLowerCase().includes(q));
-  }
-
   const cursor = parseInt(searchParams.get("cursor") ?? "0", 10);
   const limit = parseInt(searchParams.get("limit") ?? "20", 10);
-  const total = result.length;
-  const paged = result.slice(cursor, cursor + limit);
+
+  let query = supabase.from("activities").select("*", { count: "exact" });
+
+  if (type && type !== "all") query = query.eq("type", type);
+  if (agentName) query = query.ilike("actor", `%${agentName}%`);
+  if (humanName) query = query.ilike("actor", `%${humanName}%`);
+
+  query = query
+    .order("created_at", { ascending: false })
+    .range(cursor, cursor + limit - 1);
+
+  const { data: rows, count } = await query;
+  const total = count ?? 0;
   const nextCursor = cursor + limit < total ? String(cursor + limit) : null;
 
-  return NextResponse.json({ data: paged, meta: { total, cursor: nextCursor } });
+  const data = (rows ?? []).map((r) => ({
+    id: r.id,
+    type: r.type,
+    actor: r.actor,
+    description: r.description,
+    entityId: r.entity_id,
+    entityType: r.entity_type,
+    entityTitle: r.entity_title,
+    createdAt: r.created_at,
+  }));
+
+  return NextResponse.json({ data, meta: { total, cursor: nextCursor } });
 }

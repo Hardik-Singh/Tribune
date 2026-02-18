@@ -1,14 +1,85 @@
 import Link from "next/link";
-import { store } from "@/lib/store";
-import { ProposalStatus } from "@/lib/types";
-import { timeAgo } from "@/lib/mock-data";
+import { supabase } from "@/lib/supabase";
+import { ProposalStatus, Proposal, Chamber, Activity, ActivityType } from "@/lib/types";
 import ProposalCard from "@/components/ProposalCard";
 import ActivityItem from "@/components/ActivityItem";
 
-export default function Home() {
-  const proposals = store.getAllProposals();
-  const chambers = store.getAllChambers();
-  const activities = store.getAllActivities();
+function timeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
+
+export default async function Home() {
+  const { data: proposalRows } = await supabase
+    .from("proposals")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  const { data: chamberRows } = await supabase
+    .from("chambers")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  const { data: activityRows } = await supabase
+    .from("activities")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const proposals: Proposal[] = (proposalRows ?? []).map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    status: r.status as ProposalStatus,
+    chamberId: r.chamber_id,
+    chamberName: r.chamber_name,
+    author: r.author,
+    agentName: r.agent_name,
+    humanName: r.human_name,
+    createdAt: r.created_at,
+    endsAt: r.ends_at,
+    votesYes: r.votes_yes,
+    votesNo: r.votes_no,
+    votesAbstain: r.votes_abstain,
+    totalVotes: r.total_votes,
+    quorum: r.quorum,
+    diff: r.diff,
+    prUrl: r.pr_url,
+    commentCount: r.comment_count,
+    upvotes: r.upvotes,
+    downvotes: r.downvotes,
+  }));
+
+  const chambers: Chamber[] = (chamberRows ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    memberCount: r.member_count,
+    proposalCount: r.proposal_count,
+    activeProposals: r.active_proposals,
+    createdAt: r.created_at,
+  }));
+
+  const activities: Activity[] = (activityRows ?? []).map((r) => ({
+    id: r.id,
+    type: r.type as ActivityType,
+    actor: r.actor,
+    description: r.description,
+    entityId: r.entity_id,
+    entityType: r.entity_type as Activity["entityType"],
+    entityTitle: r.entity_title,
+    createdAt: r.created_at,
+  }));
 
   const activeProposals = proposals.filter(
     (p) => p.status === ProposalStatus.Active
@@ -21,7 +92,7 @@ export default function Home() {
       p.status === ProposalStatus.Passed ||
       p.status === ProposalStatus.Rejected
   );
-  const recentActivity = activities.slice(0, 5);
+  const recentActivity = activities;
 
   const totalVotes = proposals.reduce((s, p) => s + p.totalVotes, 0);
   const totalMembers = chambers.reduce((s, c) => s + c.memberCount, 0);
@@ -46,7 +117,7 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Active votes — the main event */}
+      {/* Active votes */}
       {activeProposals.length > 0 && (
         <section data-testid="active-votes-section">
           <div className="flex items-center justify-between">
@@ -69,7 +140,6 @@ export default function Home() {
       )}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Highest voted — left 2/3 */}
         <div className="lg:col-span-2 space-y-8">
           <section>
             <h2 className="text-lg font-semibold text-white">
@@ -133,7 +203,6 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Recently resolved */}
           <section>
             <h2 className="text-lg font-semibold text-white">
               Recently Resolved
@@ -168,7 +237,6 @@ export default function Home() {
           </section>
         </div>
 
-        {/* Right sidebar — activity + chambers */}
         <div className="space-y-8">
           <section>
             <div className="flex items-center justify-between">

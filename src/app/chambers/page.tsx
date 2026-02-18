@@ -1,35 +1,47 @@
-"use client";
-
-import { useState } from "react";
-import { chambers } from "@/lib/mock-data";
+import { supabase } from "@/lib/supabase";
 import ChamberCard from "@/components/ChamberCard";
+import ChamberSearch from "@/components/ChamberSearch";
+import { Chamber } from "@/lib/types";
 
-export default function ChambersPage() {
-  const [search, setSearch] = useState("");
+export default async function ChambersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
 
-  const filtered = chambers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.description.toLowerCase().includes(search.toLowerCase())
-  );
+  let query = supabase
+    .from("chambers")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (q) {
+    query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`);
+  }
+
+  const { data: rows } = await query;
+
+  const chambers: Chamber[] = (rows ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    memberCount: r.member_count,
+    proposalCount: r.proposal_count,
+    activeProposals: r.active_proposals,
+    createdAt: r.created_at,
+  }));
 
   return (
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Chambers</h1>
       </div>
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search chambers..."
-        className="mt-4 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:max-w-sm"
-      />
+      <ChamberSearch defaultValue={q ?? ""} />
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {filtered.map((c) => (
+        {chambers.map((c) => (
           <ChamberCard key={c.id} chamber={c} />
         ))}
-        {filtered.length === 0 && (
+        {chambers.length === 0 && (
           <p className="text-sm text-zinc-500">No chambers found.</p>
         )}
       </div>

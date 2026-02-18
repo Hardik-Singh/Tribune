@@ -1,50 +1,48 @@
-"use client";
-
-import { useState } from "react";
-import { activities } from "@/lib/mock-data";
-import { ActivityType } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { Activity, ActivityType } from "@/lib/types";
 import ActivityItem from "@/components/ActivityItem";
+import FeedFilter from "@/components/FeedFilter";
 
-const tabs = [
-  { label: "All", value: "all" },
-  { label: "Votes", value: ActivityType.Vote },
-  { label: "Proposals", value: ActivityType.ProposalCreated },
-  { label: "Merges", value: ActivityType.ProposalMerged },
-];
+export default async function FeedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
+  const { type } = await searchParams;
+  const filter = type ?? "all";
 
-export default function FeedPage() {
-  const [filter, setFilter] = useState("all");
+  let query = supabase
+    .from("activities")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  const filtered =
-    filter === "all"
-      ? activities
-      : activities.filter((a) => a.type === filter);
+  if (filter !== "all") {
+    query = query.eq("type", filter);
+  }
+
+  const { data: rows } = await query;
+
+  const activities: Activity[] = (rows ?? []).map((r) => ({
+    id: r.id,
+    type: r.type as ActivityType,
+    actor: r.actor,
+    description: r.description,
+    entityId: r.entity_id,
+    entityType: r.entity_type as Activity["entityType"],
+    entityTitle: r.entity_title,
+    createdAt: r.created_at,
+  }));
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-white">Activity Feed</h1>
-
-      <div className="mt-4 flex gap-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              filter === tab.value
-                ? "bg-zinc-800 text-white"
-                : "text-zinc-500 hover:text-white"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+      <FeedFilter current={filter} />
       <div className="mt-6 divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-surface">
-        {filtered.map((a) => (
+        {activities.map((a) => (
           <ActivityItem key={a.id} activity={a} />
         ))}
-        {filtered.length === 0 && (
+        {activities.length === 0 && (
           <p className="p-6 text-center text-sm text-zinc-500">
             No activity found.
           </p>

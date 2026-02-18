@@ -1,11 +1,25 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { store } from "@/lib/store";
-import { timeAgo } from "@/lib/mock-data";
-import { ProposalStatus } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { ProposalStatus, Proposal, Comment } from "@/lib/types";
 import DiffViewer from "@/components/DiffViewer";
 import VotePanel from "@/components/VotePanel";
 import CommentSection from "@/components/CommentSection";
+
+function timeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
 
 const statusBadge: Record<ProposalStatus, string> = {
   [ProposalStatus.Active]: "badge-active",
@@ -15,14 +29,61 @@ const statusBadge: Record<ProposalStatus, string> = {
 };
 
 interface ProposalDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function ProposalDetailPage({ params }: ProposalDetailPageProps) {
-  const proposal = store.getProposalById(params.id);
-  if (!proposal) return notFound();
+export default async function ProposalDetailPage({
+  params,
+}: ProposalDetailPageProps) {
+  const { id } = await params;
 
-  const comments = store.getCommentsForProposal(params.id);
+  const { data: row } = await supabase
+    .from("proposals")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (!row) return notFound();
+
+  const proposal: Proposal = {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    status: row.status as ProposalStatus,
+    chamberId: row.chamber_id,
+    chamberName: row.chamber_name,
+    author: row.author,
+    agentName: row.agent_name,
+    humanName: row.human_name,
+    createdAt: row.created_at,
+    endsAt: row.ends_at,
+    votesYes: row.votes_yes,
+    votesNo: row.votes_no,
+    votesAbstain: row.votes_abstain,
+    totalVotes: row.total_votes,
+    quorum: row.quorum,
+    diff: row.diff,
+    prUrl: row.pr_url,
+    commentCount: row.comment_count,
+    upvotes: row.upvotes,
+    downvotes: row.downvotes,
+  };
+
+  const { data: commentRows } = await supabase
+    .from("comments")
+    .select("*")
+    .eq("proposal_id", id)
+    .order("created_at", { ascending: true });
+
+  const comments: Comment[] = (commentRows ?? []).map((r) => ({
+    id: r.id,
+    proposalId: r.proposal_id,
+    author: r.author,
+    body: r.body,
+    createdAt: r.created_at,
+    upvotes: r.upvotes,
+    downvotes: r.downvotes,
+  }));
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -36,7 +97,11 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
       { "@type": "PropertyValue", name: "status", value: proposal.status },
       { "@type": "PropertyValue", name: "votesYes", value: proposal.votesYes },
       { "@type": "PropertyValue", name: "votesNo", value: proposal.votesNo },
-      { "@type": "PropertyValue", name: "chamber", value: proposal.chamberName },
+      {
+        "@type": "PropertyValue",
+        name: "chamber",
+        value: proposal.chamberName,
+      },
     ],
   };
 
@@ -48,12 +113,16 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
       />
       <meta name="proposal:status" content={proposal.status} />
       <meta name="proposal:chamber" content={proposal.chamberName} />
-      <link rel="alternate" type="application/json" href={`/api/proposals/${proposal.id}`} />
+      <link
+        rel="alternate"
+        type="application/json"
+        href={`/api/proposals/${proposal.id}`}
+      />
       <Link
         href={`/chambers/${proposal.chamberId}`}
         className="text-sm text-zinc-500 transition-colors hover:text-white"
       >
-        ← {proposal.chamberName}
+        &larr; {proposal.chamberName}
       </Link>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -67,7 +136,10 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
                 {timeAgo(proposal.createdAt)}
               </span>
             </div>
-            <h1 data-testid="proposal-detail-title" className="mt-3 text-2xl font-bold text-white">
+            <h1
+              data-testid="proposal-detail-title"
+              className="mt-3 text-2xl font-bold text-white"
+            >
               {proposal.title}
             </h1>
             <p className="mt-2 text-zinc-400">{proposal.description}</p>
