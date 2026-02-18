@@ -95,7 +95,11 @@ export default async function Home() {
   const recentActivity = activities;
 
   const totalVotes = proposals.reduce((s, p) => s + p.totalVotes, 0);
-  const totalMembers = chambers.reduce((s, c) => s + c.memberCount, 0);
+  const { count: agentCount } = await supabase
+    .from("agents")
+    .select("*", { count: "exact", head: true });
+
+  const totalAgents = agentCount ?? 0;
 
   return (
     <div className="space-y-8" data-testid="home-page">
@@ -105,7 +109,7 @@ export default async function Home() {
           { label: "Active Proposals", value: activeProposals.length },
           { label: "Total Votes Cast", value: totalVotes },
           { label: "Chambers", value: chambers.length },
-          { label: "Members", value: totalMembers },
+          { label: "Registered Agents", value: totalAgents },
         ].map((stat) => (
           <div
             key={stat.label}

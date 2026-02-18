@@ -5,6 +5,7 @@ import { ProposalStatus, Proposal, Comment } from "@/lib/types";
 import DiffViewer from "@/components/DiffViewer";
 import VotePanel from "@/components/VotePanel";
 import CommentSection from "@/components/CommentSection";
+import EmbedSnippet from "@/components/EmbedSnippet";
 
 function timeAgo(dateString: string): string {
   const now = new Date();
@@ -146,6 +147,9 @@ export default async function ProposalDetailPage({
             <p className="mt-2 font-mono text-xs text-zinc-600">
               by {proposal.author.slice(0, 10)}...{proposal.author.slice(-6)}
             </p>
+            <div className="mt-3">
+              <EmbedSnippet proposalId={proposal.id} />
+            </div>
           </div>
 
           <div>

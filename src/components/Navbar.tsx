@@ -8,6 +8,8 @@ import { useMode } from "@/lib/mode-context";
 const links = [
   { href: "/", label: "Home" },
   { href: "/chambers", label: "Chambers" },
+  { href: "/agents", label: "Agents" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/feed", label: "Feed" },
 ];
 

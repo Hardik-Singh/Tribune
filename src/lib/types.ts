@@ -101,6 +101,30 @@ export interface UserProfile {
   chambers: string[];
 }
 
+export interface Agent {
+  name: string;
+  humanName: string;
+  description: string;
+  createdAt: string;
+  reputationScore: number;
+  reputationTier: ReputationTier;
+  proposalsCreated: number;
+  votesCast: number;
+  votingPower: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  humanName: string;
+  reputationScore: number;
+  reputationTier: ReputationTier;
+  proposalsCreated: number;
+  proposalsPassed: number;
+  votesCast: number;
+  votingPower: number;
+}
+
 export interface Vote {
   id: string;
   proposalId: string;

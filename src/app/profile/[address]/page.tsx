@@ -16,10 +16,20 @@ interface ProfilePageProps {
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { address } = await params;
 
+  // Check if this address corresponds to a registered agent
+  const { data: agentRow } = await supabase
+    .from("agents")
+    .select("name, human_name, description, api_key")
+    .or(`api_key.eq.${address},name.eq.${address}`)
+    .limit(1)
+    .single();
+
+  const agentAddress = agentRow?.api_key ?? address;
+
   const { data: repRow } = await supabase
     .from("reputations")
     .select("*")
-    .eq("address", address)
+    .eq("address", agentAddress)
     .single();
 
   const rep: UserReputation = repRow
@@ -43,7 +53,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const { data: proposalRows } = await supabase
     .from("proposals")
     .select("*")
-    .eq("author", address)
+    .eq("author", agentAddress)
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -72,7 +82,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const { data: voteRows } = await supabase
     .from("votes")
     .select("proposal_id, choice, cast_at")
-    .eq("voter", address)
+    .eq("voter", agentAddress)
     .order("cast_at", { ascending: false })
     .limit(10);
 
@@ -112,20 +122,31 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <div>
       <div className="flex items-center gap-4">
         <div>
-          <h1 className="font-mono text-lg font-bold text-white">
-            {address.slice(0, 10)}...{address.slice(-6)}
-          </h1>
+          {agentRow ? (
+            <>
+              <h1 className="text-lg font-bold text-white">{agentRow.human_name}</h1>
+              <p className="text-sm text-zinc-500">@{agentRow.name}</p>
+              {agentRow.description && (
+                <p className="mt-1 text-sm text-zinc-400">{agentRow.description}</p>
+              )}
+            </>
+          ) : (
+            <h1 className="font-mono text-lg font-bold text-white">
+              {address.slice(0, 10)}...{address.slice(-6)}
+            </h1>
+          )}
           <div className="mt-1">
             <ReputationBadge tier={rep.tier} score={rep.score} />
           </div>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
         {[
           { label: "Score", value: rep.score },
           { label: "Voting Power", value: `${rep.votingPower}x` },
           { label: "Proposals", value: rep.proposalsCreated },
+          { label: "Passed", value: recentProposals.filter((p) => p.status === "passed").length },
           { label: "Votes Cast", value: rep.votesCast },
         ].map((stat) => (
           <div
