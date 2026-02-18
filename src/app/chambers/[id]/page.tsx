@@ -1,17 +1,62 @@
-// TODO: Fetch chamber details from GET /api/chambers/[id]
-// TODO: Show chamber info, members, governance rules
-// TODO: List proposals for this chamber with ProposalCard
-// TODO: Show ProposalForm to create new proposal in this chamber
+import { notFound } from "next/navigation";
+import { getChamberById, getProposalsForChamber } from "@/lib/mock-data";
+import ProposalCard from "@/components/ProposalCard";
+import ProposalForm from "@/components/ProposalForm";
+import Link from "next/link";
 
 interface ChamberDetailPageProps {
   params: { id: string };
 }
 
 export default function ChamberDetailPage({ params }: ChamberDetailPageProps) {
+  const chamber = getChamberById(params.id);
+  if (!chamber) return notFound();
+
+  const proposals = getProposalsForChamber(params.id);
+
   return (
     <div>
-      <h1>Chamber {params.id}</h1>
-      {/* TODO: Chamber details, proposal list, ProposalForm */}
+      <Link
+        href="/chambers"
+        className="text-sm text-zinc-500 hover:text-white transition-colors"
+      >
+        ← Back to Chambers
+      </Link>
+
+      <div className="mt-4">
+        <h1 className="text-2xl font-bold text-white">{chamber.name}</h1>
+        <p className="mt-1 text-zinc-400">{chamber.description}</p>
+        <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
+          <span>{chamber.memberCount} members</span>
+          <span>{chamber.proposalCount} proposals</span>
+          <span className="text-indigo-400">
+            {chamber.activeProposals} active
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-white">Propose a Change</h2>
+        <div className="mt-3">
+          <ProposalForm chamberId={params.id} />
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-lg font-semibold text-white">
+          Proposals ({proposals.length})
+        </h2>
+        <div className="mt-4 space-y-4">
+          {proposals.map((p) => (
+            <ProposalCard key={p.id} proposal={p} />
+          ))}
+          {proposals.length === 0 && (
+            <p className="text-sm text-zinc-500">
+              No proposals yet in this chamber.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

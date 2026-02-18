@@ -1,19 +1,26 @@
-// TODO: Display chamber name, description, member count, active proposals count
-// TODO: Link to /chambers/[id]
+import Link from "next/link";
+import { Chamber } from "@/lib/types";
 
 interface ChamberCardProps {
-  id: string;
-  name: string;
-  description: string;
-  // TODO: Add full chamber type from SDK
+  chamber: Chamber;
 }
 
-export default function ChamberCard({ id: _id, name, description }: ChamberCardProps) {
+export default function ChamberCard({ chamber }: ChamberCardProps) {
   return (
-    <div>
-      <h3>{name}</h3>
-      <p>{description}</p>
-      {/* TODO: Member count, proposal count, link */}
-    </div>
+    <Link href={`/chambers/${chamber.id}`} className="card block">
+      <h3 className="text-lg font-semibold text-white">{chamber.name}</h3>
+      <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
+        {chamber.description}
+      </p>
+      <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
+        <span>{chamber.memberCount} members</span>
+        <span>{chamber.proposalCount} proposals</span>
+        {chamber.activeProposals > 0 && (
+          <span className="text-indigo-400">
+            {chamber.activeProposals} active
+          </span>
+        )}
+      </div>
+    </Link>
   );
 }

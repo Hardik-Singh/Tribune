@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// GET /api/reputation/[address] — Get user reputation
-// TODO: Fetch reputation score and tier from SDK
-// TODO: Include voting power, history summary
-// TODO: Return reputation object
+import { getUserReputation } from "@/lib/mock-data";
+import { ReputationTier } from "@/lib/types";
 
 export async function GET(
   _request: NextRequest,
-  { params: _params }: { params: { address: string } }
+  { params }: { params: { address: string } }
 ) {
-  // TODO: Fetch and return reputation data
-  return NextResponse.json({ error: "Not implemented" }, { status: 501 });
+  const reputation = getUserReputation(params.address);
+  if (!reputation) {
+    return NextResponse.json({
+      reputation: {
+        address: params.address,
+        score: 0,
+        tier: ReputationTier.Newcomer,
+        votingPower: 1,
+        proposalsCreated: 0,
+        votesCast: 0,
+      },
+    });
+  }
+
+  return NextResponse.json({ reputation });
 }

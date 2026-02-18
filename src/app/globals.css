@@ -3,25 +3,49 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #09090b;
+  --foreground: #fafafa;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@layer components {
+  .card {
+    @apply rounded-xl border border-zinc-800 bg-surface p-5 transition-colors hover:border-zinc-700;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-active {
+    @apply badge bg-indigo-500/20 text-indigo-400;
+  }
+
+  .badge-passed {
+    @apply badge bg-emerald-500/20 text-emerald-400;
+  }
+
+  .badge-rejected {
+    @apply badge bg-red-500/20 text-red-400;
+  }
+
+  .badge-pending {
+    @apply badge bg-zinc-500/20 text-zinc-400;
+  }
+
+  .btn-primary {
+    @apply rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-accent/50;
+  }
+
+  .btn-vote-yes {
+    @apply rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50;
+  }
+
+  .btn-vote-no {
+    @apply rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50;
   }
 }
