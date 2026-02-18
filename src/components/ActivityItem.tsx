@@ -25,8 +25,13 @@ function entityLink(activity: Activity): string {
 
 export default function ActivityItem({ activity }: ActivityItemProps) {
   return (
-    <div className="flex items-start gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-surface-light">
-      <span className="mt-0.5 text-base">{typeIcons[activity.type]}</span>
+    <div
+      data-testid={`activity-item-${activity.id}`}
+      data-component="activity-item"
+      className="flex items-start gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-surface-light"
+    >
+      <span className="mt-0.5 text-base" aria-hidden="true">{typeIcons[activity.type]}</span>
+      <span className="sr-only">{activity.type}</span>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-zinc-300">
           <span className="font-mono text-xs text-zinc-500">

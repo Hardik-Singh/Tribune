@@ -24,8 +24,31 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
 
   const comments = store.getCommentsForProposal(params.id);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: proposal.title,
+    description: proposal.description,
+    author: { "@type": "Person", identifier: proposal.author },
+    dateCreated: proposal.createdAt,
+    dateModified: proposal.endsAt,
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "status", value: proposal.status },
+      { "@type": "PropertyValue", name: "votesYes", value: proposal.votesYes },
+      { "@type": "PropertyValue", name: "votesNo", value: proposal.votesNo },
+      { "@type": "PropertyValue", name: "chamber", value: proposal.chamberName },
+    ],
+  };
+
   return (
-    <div>
+    <div data-testid="proposal-detail">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <meta name="proposal:status" content={proposal.status} />
+      <meta name="proposal:chamber" content={proposal.chamberName} />
+      <link rel="alternate" type="application/json" href={`/api/proposals/${proposal.id}`} />
       <Link
         href={`/chambers/${proposal.chamberId}`}
         className="text-sm text-zinc-500 transition-colors hover:text-white"
@@ -44,7 +67,7 @@ export default function ProposalDetailPage({ params }: ProposalDetailPageProps) 
                 {timeAgo(proposal.createdAt)}
               </span>
             </div>
-            <h1 className="mt-3 text-2xl font-bold text-white">
+            <h1 data-testid="proposal-detail-title" className="mt-3 text-2xl font-bold text-white">
               {proposal.title}
             </h1>
             <p className="mt-2 text-zinc-400">{proposal.description}</p>

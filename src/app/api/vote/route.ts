@@ -26,7 +26,13 @@ export async function GET(request: NextRequest) {
     result = result.filter((v) => v.humanName?.toLowerCase().includes(q));
   }
 
-  return NextResponse.json({ votes: result });
+  const cursor = parseInt(searchParams.get("cursor") ?? "0", 10);
+  const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+  const total = result.length;
+  const paged = result.slice(cursor, cursor + limit);
+  const nextCursor = cursor + limit < total ? String(cursor + limit) : null;
+
+  return NextResponse.json({ data: paged, meta: { total, cursor: nextCursor } });
 }
 
 export async function POST(request: NextRequest) {

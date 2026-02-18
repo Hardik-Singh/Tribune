@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
+import { ModeProvider } from "@/lib/mode-context";
 
 interface WalletState {
   address: string | null;
@@ -24,9 +25,10 @@ const MOCK_ADDRESS = "0x1a2b3c4d5e6f7890abcdef1234567890abcdef12";
 
 interface ProvidersProps {
   children: React.ReactNode;
+  initialMode?: "ai" | "human";
 }
 
-export default function Providers({ children }: ProvidersProps) {
+export default function Providers({ children, initialMode }: ProvidersProps) {
   const [address, setAddress] = useState<string | null>(null);
 
   const connect = useCallback(() => {
@@ -41,7 +43,7 @@ export default function Providers({ children }: ProvidersProps) {
     <WalletContext.Provider
       value={{ address, connected: !!address, connect, disconnect }}
     >
-      {children}
+      <ModeProvider initialMode={initialMode}>{children}</ModeProvider>
     </WalletContext.Provider>
   );
 }

@@ -4,11 +4,18 @@ import { requireAuth } from "@/lib/api-keys";
 import { ActivityType } from "@/lib/types";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { searchParams } = new URL(request.url);
   const comments = store.getCommentsForProposal(params.id);
-  return NextResponse.json({ comments });
+  const cursor = parseInt(searchParams.get("cursor") ?? "0", 10);
+  const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+  const total = comments.length;
+  const paged = comments.slice(cursor, cursor + limit);
+  const nextCursor = cursor + limit < total ? String(cursor + limit) : null;
+
+  return NextResponse.json({ data: paged, meta: { total, cursor: nextCursor } });
 }
 
 export async function POST(

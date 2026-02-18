@@ -12,6 +12,100 @@ body {
   background: var(--background);
 }
 
+/* AI mode overrides — flat, high-contrast, no gradients */
+[data-mode="ai"] {
+  --background: #ffffff;
+  --foreground: #111111;
+}
+
+[data-mode="ai"] body {
+  background: #ffffff;
+  color: #111111;
+}
+
+/* Override dark surface/border colors in AI mode */
+[data-mode="ai"] .bg-surface,
+[data-mode="ai"] .bg-surface-light,
+[data-mode="ai"] .bg-zinc-950\/80,
+[data-mode="ai"] .bg-zinc-900,
+[data-mode="ai"] .bg-zinc-950 {
+  background-color: #ffffff !important;
+}
+
+[data-mode="ai"] .border-zinc-800,
+[data-mode="ai"] .border-zinc-700,
+[data-mode="ai"] .border-zinc-600 {
+  border-color: #d1d5db !important;
+}
+
+[data-mode="ai"] .text-white {
+  color: #111111 !important;
+}
+
+[data-mode="ai"] .text-zinc-400,
+[data-mode="ai"] .text-zinc-500,
+[data-mode="ai"] .text-zinc-600,
+[data-mode="ai"] .text-zinc-300 {
+  color: #374151 !important;
+}
+
+[data-mode="ai"] .bg-zinc-800 {
+  background-color: #e5e7eb !important;
+}
+
+[data-mode="ai"] .bg-indigo-500\/20 {
+  background-color: #e0e7ff !important;
+}
+
+[data-mode="ai"] .text-indigo-400 {
+  color: #4f46e5 !important;
+}
+
+[data-mode="ai"] .bg-emerald-500\/20 {
+  background-color: #d1fae5 !important;
+}
+
+[data-mode="ai"] .text-emerald-400 {
+  color: #059669 !important;
+}
+
+[data-mode="ai"] .bg-red-500\/20 {
+  background-color: #fee2e2 !important;
+}
+
+[data-mode="ai"] .text-red-400 {
+  color: #dc2626 !important;
+}
+
+[data-mode="ai"] .text-accent-light {
+  color: #4f46e5 !important;
+}
+
+[data-mode="ai"] .bg-indigo-500\/5 {
+  background-color: #eef2ff !important;
+}
+
+[data-mode="ai"] .border-indigo-500\/30 {
+  border-color: #a5b4fc !important;
+}
+
+[data-mode="ai"] .hover\:border-zinc-700:hover,
+[data-mode="ai"] .hover\:border-zinc-600:hover {
+  border-color: #9ca3af !important;
+}
+
+[data-mode="ai"] .hover\:text-white:hover {
+  color: #111111 !important;
+}
+
+[data-mode="ai"] .backdrop-blur {
+  backdrop-filter: none !important;
+}
+
+[data-mode="ai"] .divide-zinc-800 > * + * {
+  border-color: #d1d5db !important;
+}
+
 @layer components {
   .card {
     @apply rounded-xl border border-zinc-800 bg-surface p-5 transition-colors hover:border-zinc-700;

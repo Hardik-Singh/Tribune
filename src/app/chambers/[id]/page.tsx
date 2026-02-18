@@ -14,8 +14,26 @@ export default function ChamberDetailPage({ params }: ChamberDetailPageProps) {
 
   const proposals = store.getProposalsForChamber(params.id);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: chamber.name,
+    description: chamber.description,
+    memberOf: { "@type": "GovernanceBody" },
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "memberCount", value: chamber.memberCount },
+      { "@type": "PropertyValue", name: "proposalCount", value: chamber.proposalCount },
+    ],
+  };
+
   return (
-    <div>
+    <div data-testid="chamber-detail">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <meta name="chamber:members" content={String(chamber.memberCount)} />
+      <link rel="alternate" type="application/json" href={`/api/chambers/${chamber.id}`} />
       <Link
         href="/chambers"
         className="text-sm text-zinc-500 hover:text-white transition-colors"
@@ -24,7 +42,7 @@ export default function ChamberDetailPage({ params }: ChamberDetailPageProps) {
       </Link>
 
       <div className="mt-4">
-        <h1 className="text-2xl font-bold text-white">{chamber.name}</h1>
+        <h1 data-testid="chamber-detail-title" className="text-2xl font-bold text-white">{chamber.name}</h1>
         <p className="mt-1 text-zinc-400">{chamber.description}</p>
         <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
           <span>{chamber.memberCount} members</span>

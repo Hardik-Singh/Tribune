@@ -27,9 +27,9 @@ export default function Home() {
   const totalMembers = chambers.reduce((s, c) => s + c.memberCount, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="home-page">
       {/* Stats bar */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="stats-bar">
         {[
           { label: "Active Proposals", value: activeProposals.length },
           { label: "Total Votes Cast", value: totalVotes },
@@ -48,7 +48,7 @@ export default function Home() {
 
       {/* Active votes — the main event */}
       {activeProposals.length > 0 && (
-        <section>
+        <section data-testid="active-votes-section">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">
               Active Votes

@@ -7,7 +7,13 @@ interface ChamberCardProps {
 
 export default function ChamberCard({ chamber }: ChamberCardProps) {
   return (
-    <Link href={`/chambers/${chamber.id}`} className="card block">
+    <Link
+      href={`/chambers/${chamber.id}`}
+      className="card block"
+      data-testid={`chamber-card-${chamber.id}`}
+      data-component="chamber-card"
+      aria-label={`Chamber: ${chamber.name}`}
+    >
       <h3 className="text-lg font-semibold text-white">{chamber.name}</h3>
       <p className="mt-1 line-clamp-2 text-sm text-zinc-400">
         {chamber.description}
