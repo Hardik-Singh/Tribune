@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getUserProfile, getChamberById } from "@/lib/mock-data";
+import { getUserProfile } from "@/lib/mock-data";
+import { store } from "@/lib/store";
 import ReputationBadge from "@/components/ReputationBadge";
 import ProposalCard from "@/components/ProposalCard";
 
@@ -59,7 +60,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         <h2 className="text-lg font-semibold text-white">Chambers</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {profile.chambers.map((cId) => {
-            const chamber = getChamberById(cId);
+            const chamber = store.getChamberById(cId);
             return chamber ? (
               <Link
                 key={cId}

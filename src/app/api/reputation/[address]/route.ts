@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserReputation } from "@/lib/mock-data";
+import { store } from "@/lib/store";
 import { ReputationTier } from "@/lib/types";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { address: string } }
 ) {
-  const reputation = getUserReputation(params.address);
+  const reputation = store.getReputation(params.address);
   if (!reputation) {
     return NextResponse.json({
       reputation: {

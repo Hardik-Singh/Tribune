@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getChamberById, getProposalsForChamber } from "@/lib/mock-data";
+import { store } from "@/lib/store";
 import ProposalCard from "@/components/ProposalCard";
 import ProposalForm from "@/components/ProposalForm";
 import Link from "next/link";
@@ -9,10 +9,10 @@ interface ChamberDetailPageProps {
 }
 
 export default function ChamberDetailPage({ params }: ChamberDetailPageProps) {
-  const chamber = getChamberById(params.id);
+  const chamber = store.getChamberById(params.id);
   if (!chamber) return notFound();
 
-  const proposals = getProposalsForChamber(params.id);
+  const proposals = store.getProposalsForChamber(params.id);
 
   return (
     <div>

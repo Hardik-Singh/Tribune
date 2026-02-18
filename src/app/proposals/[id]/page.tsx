@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProposalById, getCommentsForProposal, timeAgo } from "@/lib/mock-data";
+import { store } from "@/lib/store";
+import { timeAgo } from "@/lib/mock-data";
 import { ProposalStatus } from "@/lib/types";
 import DiffViewer from "@/components/DiffViewer";
 import VotePanel from "@/components/VotePanel";
@@ -18,10 +19,10 @@ interface ProposalDetailPageProps {
 }
 
 export default function ProposalDetailPage({ params }: ProposalDetailPageProps) {
-  const proposal = getProposalById(params.id);
+  const proposal = store.getProposalById(params.id);
   if (!proposal) return notFound();
 
-  const comments = getCommentsForProposal(params.id);
+  const comments = store.getCommentsForProposal(params.id);
 
   return (
     <div>

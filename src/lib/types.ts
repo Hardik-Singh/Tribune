@@ -57,6 +57,10 @@ export interface Proposal {
   commentCount: number;
   upvotes: number;
   downvotes: number;
+  /** Name of the agent that created this proposal */
+  agentName?: string;
+  /** Human name associated with the agent */
+  humanName?: string;
 }
 
 export interface Comment {
@@ -103,4 +107,8 @@ export interface Vote {
   voter: string;
   choice: VoteChoice;
   castAt: string;
+  /** Name of the agent that cast this vote */
+  agentName?: string;
+  /** Human name associated with the agent */
+  humanName?: string;
 }

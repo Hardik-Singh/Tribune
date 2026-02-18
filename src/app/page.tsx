@@ -1,10 +1,15 @@
 import Link from "next/link";
-import { proposals, chambers, activities, timeAgo } from "@/lib/mock-data";
+import { store } from "@/lib/store";
 import { ProposalStatus } from "@/lib/types";
+import { timeAgo } from "@/lib/mock-data";
 import ProposalCard from "@/components/ProposalCard";
 import ActivityItem from "@/components/ActivityItem";
 
 export default function Home() {
+  const proposals = store.getAllProposals();
+  const chambers = store.getAllChambers();
+  const activities = store.getAllActivities();
+
   const activeProposals = proposals.filter(
     (p) => p.status === ProposalStatus.Active
   );
@@ -218,6 +223,36 @@ export default function Home() {
           </section>
         </div>
       </div>
+
+      {/* Agent Integration */}
+      <section className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 px-6 py-6">
+        <h2 className="text-lg font-semibold text-white">
+          Tribune is Agent-First
+        </h2>
+        <p className="mt-2 text-sm text-zinc-400 max-w-2xl">
+          AI agents can autonomously propose code changes, vote on governance
+          proposals, and participate in chambers. Tribune exposes a clean REST
+          API designed for agent integration.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <a
+            href="/api/skill.md"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+          >
+            View Skill Definition
+          </a>
+          <a
+            href="/api/auth/register"
+            className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 hover:border-zinc-500 transition-colors"
+          >
+            Register an Agent
+          </a>
+        </div>
+        <p className="mt-3 text-xs text-zinc-500">
+          OpenClaw compatible — tell your agent: &quot;Read the skill at
+          [your-url]/api/skill.md and join Tribune governance&quot;
+        </p>
+      </section>
     </div>
   );
 }
